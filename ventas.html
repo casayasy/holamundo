@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Venta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- ALERTIFYJS -->
+    <link rel="stylesheet" href="alert/alertify.min.css">
+    <link rel="stylesheet" href="alert/themes/default.min.css">
+    <script src="alert/alertify.min.js"></script>
+    <link href="menu/styles.css" rel="stylesheet" />
+</head>
+
+<body class="bg-light p-4">
+
+    <div class="container bg-white p-4 rounded shadow-sm">
+        <h2 class="text-white bg-danger p-3 rounded">Venta</h2>
+
+        <div class="mb-3">
+            <label for="factura" class="form-label">Nº de Factura</label>
+            <input type="text" class="form-control" id="factura" readonly>
+        </div>
+
+        <div class="mb-3">
+            <label for="ruc" class="form-label">RUC/CI del Cliente</label>
+            <input type="text" required autofocus id="ruc" class="form-control" autocomplete="off" />
+        </div>
+
+        <div class="mb-3">
+            <label for="NombreCliente" class="form-label">Razón Social</label>
+            <input type="text" required id="NombreCliente" oninput="this.value = this.value.toUpperCase();"
+                class="form-control">
+        </div>
+        <button onclick="window.location.href='clientes.html'">Nuevo Cliente</button>
+
+        <div class="col-md-3 mb-2">
+            <label>Condición</label>
+            <select class="form-select" id="condicionVenta">
+                <option value="Contado">Contado</option>
+                <option value="Crédito">Crédito</option>
+            </select>
+        </div>
+
+        <button type="button" class="btn btn-danger mt-2" onclick="abrirModalCliente()">+ Nuevo Cliente</button>
+
+        <div class="row">
+            <div class="col-md-3 mb-2">
+                <label>Timbrado</label>
+                <input type="text" required class="form-control" id="timbrado">
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Fecha</label>
+                <input type="date" class="form-control" id="vigencia" readonly>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Total IVA</label>
+                <input type="text" class="form-control" id="totalIvaGeneral" readonly>
+            </div>
+            <div class="col-md-3 mb-2">
+                <label>Total</label>
+                <input type="text" class="form-control" id="totalGeneral" readonly>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button class="btn btn-primary me-2" onclick="crearVenta()">Crear Venta</button>
+            <button onclick="guardarVenta()" type="button" class="btn btn-success">
+                Guardar Venta
+            </button>
+            <button class="btn btn-danger" onclick="cancelarVenta()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Detalle Producto -->
+    <div class="container mt-4">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <label for="codigo" class="form-label">Código</label>
+                <input type="text" class="form-control" id="codigo" list="codigos" oninput="mostrarProductoPorCodigo()"
+                    onchange="buscarProductoPorCodigo()">
+                <datalist id="codigos"></datalist>
+            </div>
+            <div class="col-md-4">
+                <label for="descripcion" class="form-label">Descripción</label>
+                <input type="text" class="form-control" id="descripcion" list="listaProductos"
+                    oninput="buscarProductoPorDescripcion()" onchange="actualizarDatosProducto()">
+                <datalist id="listaProductos"></datalist>
+            </div>
+            <div class="col-md-2">
+                <label for="tipoIva" class="form-label">IVA</label>
+                <select disabled class="form-select" id="tipoIva" onchange="calcularTotal()">
+                    <option value="0">Exento</option>
+                    <option value="5">5%</option>
+                    <option value="10">10%</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="cantidad" class="form-label">Cantidad</label>
+                <input type="number" class="form-control" min="1" id="cantidad" onchange="calcularTotal()">
+            </div>
+            <div class="col-md-2">
+                <label for="precio" class="form-label">Precio</label>
+                <input type="number" readonly="form-control" id="precio" onchange="calcularTotal()">
+            </div>
+            <div class="col-md-2">
+                <label for="totalIvaDetalle" class="form-label">Total IVA</label>
+                <input type="text" class="form-control" id="totalIvaDetalle" readonly>
+            </div>
+            <div class="col-md-2">
+                <label for="subtotal" class="form-label">Subtotal</label>
+                <input type="text" class="form-control" id="subtotal" readonly>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button id="btnAgregar" class="btn btn-primary" onclick="agregarProducto()">Cargar pedido</button>
+        </div>
+    </div>
+
+    <!-- Tabla Productos Cargados -->
+    <div class="container mt-4">
+        <h5>Productos cargados</h5>
+        <table class="table table-bordered table-sm">
+            <thead class="table-light">
+                <tr>
+                    <th>Descripción</th>
+                    <th>Código</th>
+                    <th>IVA (%)</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Total IVA</th>
+                    <th>Subtotal</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody id="tablaDetalleTemp"></tbody>
+        </table>
+    </div>
+
+    <div class="container mt-5">
+        <h4>Detalle de Ventas</h4>
+        <table class="table table-bordered table-sm">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Factura</th>
+                    <th>Fecha</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th>IVA</th>
+                    <th>Detalle</th>
+                </tr>
+            </thead>
+            <tbody id="tablaVentas"></tbody>
+        </table>
+    </div>
+
+    <!-- Modal para agregar nuevo cliente -->
+    <div class="modal fade" id="modalCliente" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Registrar Nuevo Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="nuevoRuc" class="form-label">RUC (Ej: 1234567-0)</label>
+                    <input type="text" class="form-control" id="nuevoRuc">
+                    <label for="nuevoNombre" class="form-label mt-2">Nombre y Apellido</label>
+                    <input type="text" class="form-control" id="nuevoNombre">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button class="btn btn-danger" onclick="guardarCliente()">Guardar Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pago -->
+    <div class="modal fade" id="modalPago" tabindex="-1" aria-labelledby="modalPagoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPagoLabel">Pago en Efectivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Total a pagar: <strong id="totalPagarTexto">Gs. 0</strong></p>
+                    <div class="form-group mb-3">
+                        <label for="pagoCliente">Pago del cliente</label>
+                        <input type="number" class="form-control" id="pagoCliente" placeholder="Ingrese monto recibido"
+                            oninput="calcularVuelto()">
+                    </div>
+                    <div class="form-group">
+                        <label for="vuelto">Vuelto</label>
+                        <input type="text" class="form-control" id="vuelto" disabled>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmarPago()">Confirmar y Guardar Venta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalle de Venta -->
+    <div class="modal fade" id="modalDetalleVenta" tabindex="-1" aria-labelledby="detalleVentaLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="detalleVentaLabel">Detalle de Venta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="cuerpoDetalleVenta">
+            <!-- Aquí se cargan los detalles -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalProductos">
+        Ver Productos
+    </button>
+    <div class="modal fade" id="modalProductos" tabindex="-1" aria-labelledby="tituloModalProductos" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalProductos">Lista de Productos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoProductos">
+                            <!-- Se cargan los productos aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Informe de Ventas -->
+    <div class="modal fade" id="modalInforme" tabindex="-1" aria-labelledby="modalInformeLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalInformeLabel">Informe de Ventas</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formFiltrosInforme" class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label for="filtroDesde" class="form-label">Fecha Desde</label>
+                            <input type="date" class="form-control" id="filtroDesde">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroHasta" class="form-label">Fecha Hasta</label>
+                            <input type="date" class="form-control" id="filtroHasta">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroCondicion" class="form-label">Condición</label>
+                            <select id="filtroCondicion" class="form-select">
+                                <option value="">Todas</option>
+                                <option value="contado">Contado</option>
+                                <option value="credito">Crédito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroEstado" class="form-label">Estado</label>
+                            <select id="filtroEstado" class="form-select">
+                                <option value="">Todas</option>
+                                <option value="exitosa">Exitosa</option>
+                                <option value="anulada">Anulada</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" onclick="aplicarFiltrosInforme()">Aplicar filtros</button>
+                            <button type="button" class="btn btn-secondary" onclick="resetearFiltrosInforme()">Restablecer filtros</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" id="tablaInformeVentas">
+                            <thead>
+                                <tr>
+                                    <th>Factura</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Total</th>
+                                    <th>IVA</th>
+                                    <th>Condición</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuerpoInformeVentas">
+                                <!-- Aquí van las filas que mostraremos -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button class="btn btn-success" onclick="exportarExcel()">Exportar a Excel</button>
+                    <button class="btn btn-danger" onclick="exportarPDF()">Exportar a PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-info" onclick="abrirModalInforme()">Ver Informe de Ventas</button>
+
+    <!-- PIE DE PAGINA -->
+    <footer class="py-4 bg-light mt-auto">
+        <div class="container-fluid px-4">
+            <div class="d-flex align-items-center justify-content-between small">
+                <div class="text-muted">Copyright &copy; Your Website 2025</div>
+                <div>
+                    <a href="#">Política de Privacidad</a>
+                    &middot;
+                    <a href="#">Terminos &amp; Condiciones</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Verificar si existe sesión activa
+        if (!sessionStorage.getItem("sesionActiva")) {
+            localStorage.removeItem("nomUsuario");
+            localStorage.removeItem("rolUsuario");
+            window.location.href = "Pagerror.html";
+        }
+
+        let ventas = JSON.parse(localStorage.getItem("ventas")) || [];
+        let productos = JSON.parse(localStorage.getItem("articulos")) || [];
+        let clientes = JSON.parse(localStorage.getItem("clientes")) || [];
+        let detalleVenta = [];
+        let numeroFactura = parseInt(localStorage.getItem('numeroFactura')) || 1000;
+        let indexEditando = null;
+
+        const modalProductos = document.getElementById('modalProductos');
+        modalProductos.addEventListener('show.bs.modal', mostrarProductos);
+
+        window.onload = () => {
+            if (!localStorage.getItem("numeroFactura")) {
+                localStorage.setItem("numeroFactura", 1000);
+            }
+            generarNumeroFactura();
+            cargarProductos();
+            establecerFechaVigencia();
+            mostrarVentas();
+            mostrarDetalleTemp();   
+        };
+
+        function validarCampos() {
+            const ruc = document.getElementById('ruc').value.trim();
+            const cliente = document.getElementById('NombreCliente').value.trim();
+            if (ruc === '' || cliente === '') {
+                alertify.error("Complete todos los campos.");
+                return false;
+            }
+            return true;
+        }
+
+        function generarNumeroFactura() {
+            const formato = `001-001-${numeroFactura.toString().padStart(7, '0')}`;
+            document.getElementById("factura").value = formato;
+        }
+
+        function establecerFechaVigencia() {
+            const hoy = new Date();
+            const anio = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            document.getElementById("vigencia").value = `${anio}-${mes}-${dia}`;
+        }
+
+        function cargarProductos() {
+            const listaProductos = document.getElementById("listaProductos");
+            const listaCodigos = document.getElementById("codigos");
+            listaProductos.innerHTML = "";
+            listaCodigos.innerHTML = "";
+            productos.forEach(p => {
+                listaProductos.innerHTML += `<option value="${p.descripcion}">`;
+                listaCodigos.innerHTML += `<option value="${p.codbarra}">`;
+            });
+        }
+
+        function buscarProductoPorDescripcion() {
+            const desc = document.getElementById("descripcion").value.toLowerCase();
+            const p = productos.find(p => p.descripcion.toLowerCase() === desc);
+            if (p) completarCamposProducto(p);
+        }
+
+        function buscarProductoPorCodigo() {
+            const cod = document.getElementById("codigo").value;
+            const p = productos.find(p => p.codbarra === cod);
+            if (p) completarCamposProducto(p);
+        }
+
+        function completarCamposProducto(p) {
+            document.getElementById("codigo").value = p.codbarra;
+            document.getElementById("descripcion").value = p.descripcion;
+            document.getElementById("precio").value = p.preventa;
+            document.getElementById("tipoIva").value = p.tiva;
+            calcularTotal();
+        }
+
+        function calcularTotal() {
+            const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
+            const precio = parseFloat(document.getElementById("precio").value) || 0;
+            const iva = parseInt(document.getElementById("tipoIva").value);
+            const subtotal = cantidad * precio;
+            const totalIva = iva ? subtotal * (iva / 100) : 0;
+            document.getElementById("subtotal").value = subtotal.toFixed(2);
+            document.getElementById("totalIvaDetalle").value = totalIva.toFixed(2);
+        }
+
+        function agregarProducto() {
+            const campos = ["descripcion", "codigo", "tipoIva", "cantidad", "precio", "subtotal", "totalIvaDetalle"];
+            const [descripcion, codigo, tipoIva, cantidad, precio, subtotal, totalIva] = campos.map(id => document.getElementById(id).value);
+            if (!descripcion || !cantidad || !precio) {
+                alertify.error("Complete todos los campos del producto.");
+                return;
+            }
+            if (cantidad <=0) {
+                alertify.error("Debe poner una cantidad positiva.");
+                return;
+            }
+            const cantidadNum = parseInt(cantidad);
+            const productoEnStock = productos.find(p => p.codbarra === codigo);
+            if (!productoEnStock) {
+                alertify.error("Producto no encontrado en inventario.");
+                return;
+            }
+            let cantidadAgregada = 0;
+            detalleVenta.forEach((item, idx) => {
+                if (item.codigo === codigo && idx !== indexEditando) {
+                    cantidadAgregada += item.cantidad;
+                }
+            });
+            if (cantidadNum + cantidadAgregada > productoEnStock.stockactual) {
+                alertify.error(`Stock insuficiente. Solo quedan ${productoEnStock.stockactual - cantidadAgregada} unidades disponibles.`);
+                return;
+            }
+            const producto = {
+                descripcion,
+                codigo,
+                tipoIva,
+                cantidad: cantidadNum,
+                precio: parseFloat(precio),
+                subtotal: parseFloat(subtotal),
+                totalIva: parseFloat(totalIva)
+            };
+            if (indexEditando !== null) {
+                detalleVenta[indexEditando] = producto;
+                indexEditando = null;
+                actualizarBotonAgregar("Cargar pedido", "btn-primary", "btn-warning");
+            } else {
+                detalleVenta.push(producto);
+            }
+            mostrarDetalleTemp();
+            calcularTotalesGenerales();
+            limpiarCamposProducto();
+        }
+
+        function actualizarBotonAgregar(texto, claseAgregar, claseQuitar) {
+            const btn = document.getElementById("btnAgregar");
+            btn.textContent = texto;
+            btn.classList.add(claseAgregar);
+            btn.classList.remove(claseQuitar);
+        }
+
+        function mostrarDetalleTemp() {
+            const tabla = document.getElementById("tablaDetalleTemp");
+            if (detalleVenta.length === 0) {
+                const articulos = JSON.parse(localStorage.getItem("articulos")) || [];
+                tabla.innerHTML = articulos.map(item => `
+                    <tr>
+                        <td>${item.descripcion}</td>
+                        <td>${item.codbarra}</td>
+                        <td>${item.tiva}</td>
+                        <td>${item.stockactual}</td>
+                        <td>${item.preventa}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td><span class="text-muted">Sin acción</span></td>
+                    </tr>
+                `).join("");
+            } else {
+                tabla.innerHTML = detalleVenta.map((item, index) => `
+                    <tr>
+                        <td>${item.descripcion}</td>
+                        <td>${item.codigo}</td>
+                        <td>${item.tipoIva}</td>
+                        <td>${item.cantidad}</td>
+                        <td>${item.precio}</td>
+                        <td>${item.totalIva.toFixed(2)}</td>
+                        <td>${item.subtotal.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="eliminarProducto(${index})">Eliminar</button>
+                            <button class="btn btn-warning btn-sm me-1" onclick="editarProducto(${index})">Editar</button>
+                        </td>
+                    </tr>
+                `).join("");
+            }
+        }
+
+        function editarProducto(index) {
+            const item = detalleVenta[index];
+            Object.entries(item).forEach(([key, val]) => {
+                if (document.getElementById(key)) document.getElementById(key).value = val;
+            });
+            indexEditando = index;
+            actualizarBotonAgregar("Actualizar", "btn-warning", "btn-primary");
+        }
+
+        function eliminarProducto(index) {
+            detalleVenta.splice(index, 1);
+            mostrarDetalleTemp();
+            calcularTotalesGenerales();
+        }
+
+        function calcularTotalesGenerales() {
+            let totalIva = 0, total = 0;
+            detalleVenta.forEach(item => {
+                total += item.subtotal;
+                totalIva += item.totalIva;
+            });
+            document.getElementById("totalIvaGeneral").value = totalIva.toFixed(2);
+            document.getElementById("totalGeneral").value = total.toFixed(2);
+        }
+
+        function limpiarCamposProducto() {
+            ["descripcion", "codigo", "tipoIva", "cantidad", "precio", "subtotal", "totalIvaDetalle"].forEach(id => {
+                document.getElementById(id).value = id === "tipoIva" ? "0" : "";
+            });
+        }
+
+        document.getElementById('ruc').addEventListener('blur', function () {
+            const cirucValue = this.value.trim();
+            if (!cirucValue) return;
+            const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            const cliente = clientes.find(c => c.ciruc === cirucValue);
+            if (cliente) {
+                document.getElementById('NombreCliente').value = cliente.nombre + ' ' + cliente.apellido;
+            } else {
+                document.getElementById('NombreCliente').value = '';
+                alertify.error('Cliente no registrado.');
+            }
+        });
+
+        const modalPago = document.getElementById('modalPago');
+        modalPago.addEventListener('show.bs.modal', function () {
+            const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+            document.getElementById("totalPagarTexto").textContent = `Gs. ${total.toLocaleString()}`;
+            document.getElementById("pagoCliente").value = '';
+            document.getElementById("vuelto").value = '';
+        });
+
+        function calcularVuelto() {
+            const pago = parseFloat(document.getElementById("pagoCliente").value) || 0;
+            const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+            const vuelto = pago - total;
+            document.getElementById("vuelto").value = vuelto >= 0 ? `Gs. ${vuelto.toLocaleString()}` : 'Pago insuficiente';
+        }
+
+        function crearVenta() {
+            ["ruc", "NombreCliente", "timbrado", "totalIvaGeneral", "totalGeneral"].forEach(id => {
+                document.getElementById(id).value = "";
+            });
+            detalleVenta = [];
+            mostrarDetalleTemp();
+            generarNumeroFactura();
+            establecerFechaVigencia();
+            limpiarCamposProducto();
+        }
+
+        function confirmarPago() {
+            const pago = parseFloat(document.getElementById("pagoCliente").value) || 0;
+            const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+            if (pago < total) {
+                alertify.error("El pago es insuficiente.");
+                return;
+            }
+            const factura = document.getElementById("factura").value;
+            const ruc = document.getElementById("ruc").value;
+            const cliente = document.getElementById("NombreCliente").value;
+            const iva = parseFloat(document.getElementById("totalIvaGeneral").value) || 0;
+            const vuelto = pago - total;
+            const ahora = new Date().toISOString();
+            const condicion = document.getElementById("condicionVenta").value || "contado";
+            const venta = {
+                factura,
+                fecha: ahora,
+                ruc,
+                cliente,
+                total,
+                iva,
+                pago,
+                vuelto,
+                condicion,
+                anulada: false,
+                detalle: [...detalleVenta]
+            };
+            let articulos = JSON.parse(localStorage.getItem("articulos")) || [];
+            venta.detalle.forEach(itemVenta => {
+                const articulo = articulos.find(p => p.codbarra === itemVenta.codigo);
+                if (articulo) {
+                    articulo.stockactual = (articulo.stockactual || 0) - itemVenta.cantidad;
+                    if (articulo.stockactual < 0) articulo.stockactual = 0;
+                }
+            });
+            localStorage.setItem("articulos", JSON.stringify(articulos));
+            ventas.push(venta);
+            localStorage.setItem("ventas", JSON.stringify(ventas));
+            alertify.success("Venta guardada exitosamente.");
+            numeroFactura++;
+            localStorage.setItem('numeroFactura', numeroFactura);
+            mostrarVentas();
+            imprimirFactura(venta);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalPago'));
+            modal.hide();
+            limpiarFormulario();
+        }
+
+        function limpiarFormulario() {
+            document.getElementById("factura").value = '';
+            document.getElementById("ruc").value = '';
+            document.getElementById("NombreCliente").value = '';
+            document.getElementById("pagoCliente").value = '';
+            document.getElementById("timbrado").value = '';
+            document.getElementById("totalGeneral").value = '0';
+            document.getElementById("totalIvaGeneral").value = '0';
+            document.getElementById("condicionVenta").value = 'contado';
+            detalleVenta = [];
+            mostrarDetalleTemp();
+            document.getElementById("codigo").value = '';
+            document.getElementById("descripcion").value = '';
+            document.getElementById("precio").value = '';
+            document.getElementById("cantidad").value = '';
+            document.getElementById("tipoIva").value = '0';
+            document.getElementById("subtotal").value = '';
+            document.getElementById("totalIvaDetalle").value = '';
+        }
+
+        function guardarVenta() {
+            if (!validarCampos()) return;
+            if (detalleVenta.length === 0) {
+                alertify.error('Debe agregar al menos un producto antes de guardar la venta.');
+                return;
+            }
+            const modal = new bootstrap.Modal(document.getElementById("modalPago"));
+            modal.show();
+        }
+
+        function cancelarVenta() {
+            detalleVenta = [];
+            document.getElementById("ruc").value = "";
+            document.getElementById("NombreCliente").value = "";
+            document.getElementById("totalIvaGeneral").value = "";
+            document.getElementById("totalGeneral").value = "";
+            mostrarDetalleTemp();
+            limpiarCamposProducto();
+            generarNumeroFactura();
+        }
+
+        const usuarioActivo = JSON.parse(localStorage.getItem("usuarioActivo")) || { rol: "usuario", nombre: "Invitado" };
+
+        function mostrarVentas(lista = ventas) {
+            const tabla = document.getElementById("tablaVentas");
+            tabla.innerHTML = lista.map(v => {
+                const creado = new Date(v.fecha);
+                const ahora = new Date();
+                const diffHrs = (ahora - creado) / (1000 * 60 * 60);
+                const puedeAnular = diffHrs <= 24 && !v.anulada;
+                const esAdmin = (usuarioActivo.rol || "").toLowerCase() === "administrador";
+                if (v.anulada) {
+                    return `
+<tr class="table-danger">
+  <td>${v.factura}</td>
+  <td>${creado.toLocaleDateString()} ${creado.toLocaleTimeString()}</td>
+  <td>${v.cliente}</td>
+  <td>${v.total.toFixed(2)}</td>
+  <td>${v.iva.toFixed(2)}</td>
+  <td>
+    <span class="text-danger">
+      Anulada por ${v.anuladaPor}<br><small>${new Date(v.fechaAnulacion).toLocaleString()}</small>
+    </span>
+  </td>
+</tr>
+`;
+                }
+                return `
+<tr>
+  <td>${v.factura}</td>
+  <td>${creado.toLocaleDateString()} ${creado.toLocaleTimeString()}</td>
+  <td>${v.cliente}</td>
+  <td>${v.total.toFixed(2)}</td>
+  <td>${v.iva.toFixed(2)}</td>
+  <td>
+    <button class="btn btn-info btn-sm" onclick='verDetalle("${v.factura}")'>Ver</button>
+    ${esAdmin ? `
+      <button class="btn btn-${puedeAnular ? 'warning' : 'secondary'} btn-sm"
+              onclick='anularVenta("${v.factura}")'
+              ${puedeAnular ? '' : 'disabled'}>
+        Anular
+      </button>
+    ` : `<span class="text-muted">Anular</span>`}
+    ${!puedeAnular && esAdmin ? `<br><small class="text-muted">Venció el periodo para anular</small>` : ''}
+  </td>
+</tr>
+`;
+            }).join("");
+        }
+
+        function anularVenta(factura) {
+            if ((usuarioActivo.rol || "").toLowerCase() !== "administrador") {
+                alertify.error("Solo el administrador puede anular ventas.");
+                return;
+            }
+            const idx = ventas.findIndex(v => v.factura === factura);
+            if (idx === -1) {
+                alertify.error("Venta no encontrada.");
+                return;
+            }
+            const venta = ventas[idx];
+            const creado = new Date(venta.fecha);
+            const diffHrs = (Date.now() - creado.getTime()) / 36e5;
+            if (diffHrs > 24) {
+                alertify.error("Ya expiró el plazo de 24 horas para anular esta venta.");
+                mostrarVentas();
+                return;
+            }
+            alertify.confirm(
+                "Confirmar anulación",
+                `¿Seguro quieres anular la factura ${factura}?`,
+                () => {
+                    ventas[idx].anulada = true;
+                    ventas[idx].anuladaPor = usuarioActivo.nombre || "Administrador";
+                    ventas[idx].fechaAnulacion = new Date().toISOString();
+                    localStorage.setItem("ventas", JSON.stringify(ventas));
+                    alertify.success(`Factura ${factura} anulada correctamente.`);
+                    mostrarVentas();
+                },
+                () => {
+                    alertify.message("Operación cancelada.");
+                }
+            );
+         }
+
+        // MODAL DETALLE DE VENTA
+        function verDetalle(factura) {
+            const venta = ventas.find(v => v.factura === factura);
+            if (!venta) {
+                alertify.error("Venta no encontrada.");
+                return;
+            }
+            let html = `
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                            <th>IVA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            venta.detalle.forEach(p => {
+                html += `
+                    <tr>
+                        <td>${p.descripcion}</td>
+                        <td>${p.cantidad}</td>
+                        <td>${p.precio.toLocaleString()}</td>
+                        <td>${p.subtotal.toLocaleString()}</td>
+                        <td>${p.totalIva.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                    </tbody>
+                </table>
+                <p><strong>Total:</strong> ${venta.total.toLocaleString()}</p>
+                <p><strong>IVA Total:</strong> ${venta.iva.toLocaleString()}</p>
+            `;
+            document.getElementById("cuerpoDetalleVenta").innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalleVenta'));
+            modal.show();
+        }
+
+        function mostrarProductos() {
+            const cuerpo = document.getElementById("cuerpoProductos");
+            cuerpo.innerHTML = "";
+            const articulos = JSON.parse(localStorage.getItem("articulos")) || [];
+            articulos.forEach(articulo => {
+                cuerpo.innerHTML += `
+                    <tr>
+                        <td>${articulo.codbarra}</td>
+                        <td>${articulo.descripcion}</td>
+                        <td>${articulo.preventa}</td>
+                        <td>${articulo.stockactual}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function abrirModalInforme() {
+            const modal = new bootstrap.Modal(document.getElementById('modalInforme'));
+            modal.show();
+            mostrarInformeVentas(ventas);
+        }
+
+        function mostrarInformeVentas(listaVentas) {
+            const cuerpo = document.getElementById("cuerpoInformeVentas");
+            cuerpo.innerHTML = "";
+            if (listaVentas.length === 0) {
+                cuerpo.innerHTML = `<tr><td colspan="7" class="text-center">No hay ventas para mostrar.</td></tr>`;
+                return;
+            }
+            listaVentas.forEach(v => {
+                const fechaObj = new Date(v.fecha);
+                const fechaStr = fechaObj.toLocaleDateString() + " " + fechaObj.toLocaleTimeString();
+                const condicion = v.condicion || "contado";
+                const estado = v.anulada ? "Anulada" : "Exitosa";
+                cuerpo.innerHTML += `
+            <tr>
+                <td>${v.factura}</td>
+                <td>${fechaStr}</td>
+                <td>${v.cliente}</td>
+                <td>${v.total.toFixed(2)}</td>
+                <td>${v.iva.toFixed(2)}</td>
+                <td>${condicion.charAt(0).toUpperCase() + condicion.slice(1)}</td>
+                <td>${estado}</td>
+            </tr>
+        `;
+            });
+        }
+
+        function aplicarFiltrosInforme() {
+            const desde = document.getElementById("filtroDesde").value;
+            const hasta = document.getElementById("filtroHasta").value;
+            const condicion = document.getElementById("filtroCondicion").value;
+            const estado = document.getElementById("filtroEstado").value;
+            let filtradas = ventas;
+            if (desde) {
+                const desdeDate = new Date(desde);
+                filtradas = filtradas.filter(v => new Date(v.fecha) >= desdeDate);
+            }
+            if (hasta) {
+                const hastaDate = new Date(hasta);
+                hastaDate.setHours(23, 59, 59, 999);
+                filtradas = filtradas.filter(v => new Date(v.fecha) <= hastaDate);
+            }
+            if (condicion) {
+                filtradas = filtradas.filter(v => ((v.condicion || "contado").toLowerCase()) === condicion.toLowerCase());
+            }
+            if (estado) {
+                if (estado === "exitosa") {
+                    filtradas = filtradas.filter(v => !v.anulada);
+                } else if (estado === "anulada") {
+                    filtradas = filtradas.filter(v => v.anulada);
+                }
+            }
+            mostrarInformeVentas(filtradas);
+        }
+
+        function resetearFiltrosInforme() {
+            document.getElementById("formFiltrosInforme").reset();
+            mostrarInformeVentas(ventas);
+        }
+
+        function exportarPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const fechaActual = new Date();
+            const fechaTexto = fechaActual.toLocaleDateString();
+            const horaTexto = fechaActual.toLocaleTimeString();
+            const titulo = "Informe de Ventas";
+            const subTitulo = `Emitido el ${fechaTexto} a las ${horaTexto}`;
+            const empresa = "Casa Yasy S.A";
+            const direccion = "Av. Pinedo";
+            const telefono = "Tel: 2222222";
+            doc.setFontSize(14);
+            doc.text(empresa, 14, 10);
+            doc.setFontSize(10);
+            doc.text(direccion, 14, 15);
+            doc.text(telefono, 14, 20);
+            doc.setFontSize(12);
+            doc.text(titulo, 105, 30, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text(subTitulo, 105, 35, { align: 'center' });
+            let filtroTexto = "";
+            const desde = document.getElementById("filtroDesde").value;
+            const hasta = document.getElementById("filtroHasta").value;
+            const condicion = document.getElementById("filtroCondicion").value;
+            const estado = document.getElementById("filtroEstado").value;
+            if (desde || hasta || condicion || estado) {
+                filtroTexto += "Filtros aplicados: ";
+                if (desde) filtroTexto += `Desde: ${desde} `;
+                if (hasta) filtroTexto += `Hasta: ${hasta} `;
+                if (condicion) filtroTexto += `Condición: ${condicion} `;
+                if (estado) filtroTexto += `Estado: ${estado}`;
+            }
+            if (filtroTexto) {
+                doc.setFontSize(9);
+                doc.text(filtroTexto.trim(), 14, 43);
+            }
+            const tabla = document.getElementById("tablaInformeVentas");
+            const headers = [];
+            const rows = [];
+            tabla.querySelectorAll("thead tr th").forEach(th => headers.push(th.textContent.trim()));
+            tabla.querySelectorAll("tbody tr").forEach(tr => {
+                const row = [];
+                tr.querySelectorAll("td").forEach(td => row.push(td.textContent.trim()));
+                rows.push(row);
+            });
+            doc.autoTable({
+                head: [headers],
+                body: rows,
+                startY: filtroTexto ? 48 : 43,
+                margin: { top: 10 },
+                styles: { fontSize: 8 },
+                didDrawPage: function (data) {
+                    const pageCount = doc.internal.getNumberOfPages();
+                    const pageSize = doc.internal.pageSize;
+                    const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+                    const pageNumber = doc.internal.getCurrentPageInfo().pageNumber;
+                    doc.setFontSize(8);
+                    doc.text(`Página ${pageNumber} de ${pageCount}`, data.settings.margin.left, pageHeight - 5);
+                }
+            });
+            doc.save("informe_ventas.pdf");
+        }
+
+        function imprimirFactura(venta) {
+            const div = document.getElementById("contenidoFactura");
+            const fecha = new Date(venta.fecha).toLocaleString();
+            const usuario = venta.usuario || "Caja 1";
+            const caja = venta.caja || "1";
+            let html = `
+        <div style="text-align: center;">
+            <h3>Casa Yasy S.A</h3>
+            <p>RUC: 12345678-9</p>
+            <p>Av. Pinedo</p>
+            <p>Tel: (222) 456-789</p>
+            <hr>
+        </div>
+        <p><strong>Factura N°:</strong> ${venta.factura}</p>
+        <p><strong>Fecha:</strong> ${fecha}</p>
+        <p><strong>Caja:</strong> ${caja}</p>
+        <p><strong>Atendió:</strong> ${usuario}</p>
+        <p><strong>Cliente:</strong> ${venta.cliente}</p>
+        <p><strong>RUC:</strong> ${venta.ruc}</p>
+        <hr>
+        <table style="width:100%; font-size: 12px;">
+            <thead>
+                <tr>
+                    <th>Desc</th>
+                    <th>Cant</th>
+                    <th>Precio</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+            venta.detalle.forEach(item => {
+                html += `
+            <tr>
+                <td>${item.descripcion}</td>
+                <td>${item.cantidad}</td>
+                <td>${item.precio.toFixed(0)}</td>
+                <td>${(item.precio * item.cantidad).toFixed(0)}</td>
+            </tr>
+        `;
+            });
+            html += `
+    </tbody>
+</table>
+<hr>
+<p><strong>IVA:</strong> ${venta.iva.toLocaleString("es-ES")}</p>
+<p><strong>Total:</strong> ${venta.total.toLocaleString("es-ES")}</p>
+<p><strong>Pago:</strong> ${venta.pago.toLocaleString("es-ES")}</p>
+<p><strong>Vuelto:</strong> ${venta.vuelto.toLocaleString("es-ES")}</p>
+<hr>
+<p style="text-align: center;">¡Gracias por su compra!</p>
+`;
+            div.innerHTML = html;
+            const areaImprimir = document.getElementById("facturaImprimir").innerHTML;
+            const ventana = window.open('', 'PRINT', 'height=600,width=400');
+            ventana.document.write('<html><head><title>Factura</title>');
+            ventana.document.write('</head><body>');
+            ventana.document.write(areaImprimir);
+            ventana.document.write('</body></html>');
+            ventana.document.close();
+            ventana.focus();
+            ventana.print();
+            ventana.close();
+        }
+    </script>
+    <script src="bdP.js"></script>
+    <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <div id="facturaImprimir" style="display: none; font-family: monospace; width: 80mm; padding: 10px;">
+        <div id="contenidoFactura"></div>
+    </div>
+</body>
+</html> 
